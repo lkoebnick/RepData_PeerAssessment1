@@ -1,8 +1,12 @@
-Analysis of Activity Monitoring Data
+# Analysis of Activity Monitoring Data
 
-====================================
 
-In order to get a general idea of daily activity levels, I analyzed two months of data from a personal activity monitoring device. The dataset can be downloaded from the Coursera Reproducible Research web page.
+### Introduction
+
+It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the “quantified self” movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
+
+
+In order to get a general idea of daily activity levels, I analyzed two months of data from a personal activity monitoring device. The dataset can be downloaded from the Coursera Reproducible Research web page. (https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip)
 
 The variables included in this dataset are:
 
@@ -10,48 +14,60 @@ The variables included in this dataset are:
 - date: The date on which the measurement was taken in YYYY-MM-DD format
 - interval: Identifier for the 5-minute interval in which measurement was taken
 
+### Part 1: Loading and preprocessing the data
+
 First, I unzipped the file and read the data into an object in R.
 
-'''{r}
+```{r}
 echo = TRUE
 unzip("activity.zip")
 data <- read.csv("activity.csv", colClasses = c("integer", "Date", "integer"))
-'''
+```
+
+
+### Part 2: What is mean total number of steps taken per day?
 
 I made a histogram of the total number of steps taken per day to get an idea of the data distribution.
 
-'''{r}
+```{r}
 library(ggplot2)
 dailySteps <- aggregate(steps ~ date, data=data, FUN=sum)
 qplot(dailySteps$steps, geom="bar", binwidth=500, xlab='steps per day', ylab='frequency')
-'''
+```
 
-It looks like the individual took between 5000 and 15,000 steps each day with an average around 10,000 steps per day. To confirm this, I found the mean and median number of steps taken per day.
 
-'''{r}
+It looks like the individual took between 5,000 and 15,000 steps each day with an average around 10,000 steps per day. To confirm this, I found the mean and median number of steps taken per day.
+
+```{r}
 mean(dailySteps$steps)
 median(dailySteps$steps)
-'''
+```
 
-I made a time series plot of the average number of steps taken in each 5 minute interval. This will show how activity levels change throughout the day.
 
-'''{r}
+### Part 3: What is the average daily activity pattern?
+
+I made a time series plot of the average number of steps taken in each 5 minute interval to show how activity levels change throughout the day.
+
+```{r}
 library(lattice)
 intervals <- na.omit(data)
 intervalSteps <- aggregate(steps ~ interval, data=intervals, FUN=mean)
 xyplot(steps ~ interval, intervalSteps, type='l')
-'''
+```
 
 Due to the nature of the interval values, there are gaps between the 55th and 100th interval and between the 155th and 200th interval and so on.
 It appears the hour with the highest average number of steps is around 8:00 AM. This can be confirmed by finding the interval with the max number of steps.
 
-'''{r}
+```{r}
 intervalSteps$interval[which.max(intervalSteps$steps)]
-'''
+```
+
+
+### Part 4: Imputing missing values
 
 In an attempt to get a more accurate dataset, I imputed missing values.
 
-'''{r}
+```{r}
 sum(is.na(data$steps))
 fullData <- data
 for (i in 1:nrow(fullData)) {
@@ -61,28 +77,30 @@ for (i in 1:nrow(fullData)) {
     }
 }
 sum(is.na(fullData$steps))
-'''
+```
 
 I made a histogram of the number of steps taken per day and recalculated the mean and median to see how the data changed after imputing missing values.
 
-'''{r}
+```{r}
 library(ggplot2)
 fullDailySteps <- aggregate(steps ~ date, data=fullData, FUN=sum)
 qplot(fullDailySteps$steps, geom="bar", binwidth=500,
     xlab='steps per day', ylab='frequency')
-'''
+```
 
-'''{r}
+```{r}
 mean(fullDailySteps$steps)
 median(fullDailySteps$steps)
-'''
+```
 
 The mean and median number of steps per day are now equal since imputing missing values.
 
 
+### Part 5: Are there differences in activity patterns between weekdays and weekends?
+
 I was also curious to see if there were differences in activity patterns between weekdays and weekends. I used the data set with imputed values and categorized each date as either weekday or weekend.
 
-'''{r}
+```{r}
 fullData$day <- weekdays(fullData$date)
 fullData$dayType <- as.factor(c('weekend', 'weekday'))
 for (i in 1:nrow(fullData)) {
@@ -99,6 +117,6 @@ for (i in 1:nrow(fullData)) {
 intervalDayType <- aggregate(steps ~ interval + dayType, data=fullData, FUN=mean)
 xyplot(steps ~ interval | dayType, intervalDayType, type='l',
     layout=c(1,2), xlab='Interval', ylab='Steps')
-'''
+```
 
 As you can see, the individual was more active throughout the day on weekends, whereas most of the activity on weekdays came in the 8 AM hour.
